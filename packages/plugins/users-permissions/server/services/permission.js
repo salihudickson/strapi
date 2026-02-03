@@ -30,12 +30,15 @@ module.exports = ({ strapi }) => ({
    *
    * @param {object} permission
    * @param {string} permission.action
+   * @param {boolean} permission.allowDraft
    *
    * @return {{ action: string }}
    */
   toContentAPIPermission(permission) {
     const { action } = permission;
 
+    // Draft validation is handled by middleware in bootstrap
+    // This just returns the action for the ability engine
     return { action };
   },
 });

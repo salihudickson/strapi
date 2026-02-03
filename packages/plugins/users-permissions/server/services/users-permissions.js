@@ -62,6 +62,7 @@ module.exports = ({ strapi }) => ({
             return {
               enabled: defaultEnable,
               policy: '',
+              allowDraft: false,
             };
           });
 
@@ -89,6 +90,7 @@ module.exports = ({ strapi }) => ({
             return {
               enabled: defaultEnable,
               policy: '',
+              allowDraft: false,
             };
           });
 

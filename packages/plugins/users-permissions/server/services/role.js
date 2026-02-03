@@ -19,7 +19,7 @@ module.exports = ({ strapi }) => ({
         return _.reduce(
           controller,
           (acc, action, actionName) => {
-            const { enabled /* policy */ } = action;
+            const { enabled, allowDraft = false /* policy */ } = action;
 
             if (enabled) {
               const actionID = `${typeName}.${controllerName}.${actionName}`;
@@ -27,7 +27,7 @@ module.exports = ({ strapi }) => ({
               acc.push(
                 strapi.db
                   .query('plugin::users-permissions.permission')
-                  .create({ data: { action: actionID, role: role.id } })
+                  .create({ data: { action: actionID, role: role.id, allowDraft } })
               );
             }
 
@@ -59,6 +59,7 @@ module.exports = ({ strapi }) => ({
       _.set(allActions, `${type}.controllers.${controller}.${action}`, {
         enabled: true,
         policy: '',
+        allowDraft: permission.allowDraft || false,
       });
     });
 
@@ -98,26 +99,24 @@ module.exports = ({ strapi }) => ({
 
     const { permissions } = data;
 
-    const newActions = _.flatMap(permissions, (type, typeName) => {
-      return _.flatMap(type.controllers, (controller, controllerName) => {
-        return _.reduce(
-          controller,
-          (acc, action, actionName) => {
-            const { enabled /* policy */ } = action;
-
-            if (enabled) {
-              acc.push(`${typeName}.${controllerName}.${actionName}`);
-            }
-
-            return acc;
-          },
-          []
-        );
+    // Build a map of new actions with their allowDraft settings
+    const newActionsMap = {};
+    _.forEach(permissions, (type, typeName) => {
+      _.forEach(type.controllers, (controller, controllerName) => {
+        _.forEach(controller, (action, actionName) => {
+          const { enabled, allowDraft = false /* policy */ } = action;
+          if (enabled) {
+            const actionKey = `${typeName}.${controllerName}.${actionName}`;
+            newActionsMap[actionKey] = { action: actionKey, allowDraft };
+          }
+        });
       });
     });
 
+    const newActions = Object.keys(newActionsMap);
     const oldActions = role.permissions.map(({ action }) => action);
 
+    // Permissions to delete (enabled is now false)
     const toDelete = role.permissions.reduce((acc, permission) => {
       if (!newActions.includes(permission.action)) {
         acc.push(permission);
@@ -125,9 +124,21 @@ module.exports = ({ strapi }) => ({
       return acc;
     }, []);
 
+    // Permissions to create (newly enabled)
     const toCreate = newActions
       .filter((action) => !oldActions.includes(action))
-      .map((action) => ({ action, role: role.id }));
+      .map((action) => ({ action, role: role.id, allowDraft: newActionsMap[action].allowDraft }));
+
+    // Permissions to update (allowDraft changed)
+    const toUpdate = role.permissions.reduce((acc, permission) => {
+      if (newActions.includes(permission.action)) {
+        const newAllowDraft = newActionsMap[permission.action].allowDraft;
+        if (permission.allowDraft !== newAllowDraft) {
+          acc.push({ id: permission.id, allowDraft: newAllowDraft });
+        }
+      }
+      return acc;
+    }, []);
 
     await Promise.all(
       toDelete.map((permission) =>
@@ -140,6 +151,14 @@ module.exports = ({ strapi }) => ({
     await Promise.all(
       toCreate.map((permissionInfo) =>
         strapi.db.query('plugin::users-permissions.permission').create({ data: permissionInfo })
+      )
+    );
+
+    await Promise.all(
+      toUpdate.map((permissionInfo) =>
+        strapi.db
+          .query('plugin::users-permissions.permission')
+          .update({ where: { id: permissionInfo.id }, data: { allowDraft: permissionInfo.allowDraft } })
       )
     );
   },

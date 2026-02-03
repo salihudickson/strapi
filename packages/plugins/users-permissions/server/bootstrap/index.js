@@ -9,6 +9,7 @@
  */
 const crypto = require('crypto');
 const _ = require('lodash');
+const { ForbiddenError } = require('@strapi/utils').errors;
 const { getService } = require('../utils');
 const usersPermissionsActions = require('./users-permissions-actions');
 const {
@@ -124,6 +125,63 @@ module.exports = async ({ strapi }) => {
     .actionProvider.registerMany(usersPermissionsActions.actions);
 
   await getService('users-permissions').initialize();
+
+  // Register draft permission validation middleware globally for content-api
+  strapi.server.use(async (ctx, next) => {
+    // Only apply to content-api routes
+    if (ctx.state.route?.info?.type !== 'content-api') {
+      return next();
+    }
+
+    // Get the status query parameter
+    const status = ctx.query?.status;
+
+    // Only check if status=draft is requested
+    if (status !== 'draft') {
+      return next();
+    }
+
+    // Get the auth info
+    const auth = ctx.state.auth;
+
+    // If no auth, let the normal authentication handle it
+    if (!auth) {
+      return next();
+    }
+
+    // Get the route configuration to determine which action is being accessed
+    const routeConfig = ctx.state.route?.config;
+    const scopes = routeConfig?.auth?.scope ? _.castArray(routeConfig.auth.scope) : [];
+
+    // If no scopes defined, continue
+    if (scopes.length === 0) {
+      return next();
+    }
+
+    // Get user's role or check if public
+    const user = auth.credentials;
+    const roleId = user?.role?.id;
+
+    let permissions;
+    if (roleId) {
+      // Get authenticated user's permissions
+      permissions = await getService('permission').findRolePermissions(roleId);
+    } else {
+      // Get public role permissions
+      permissions = await getService('permission').findPublicPermissions();
+    }
+
+    // Check if user has draft permission for any of the scopes
+    const hasDraftPermission = scopes.some((scope) =>
+      permissions.some((perm) => perm.action === scope && perm.allowDraft === true)
+    );
+
+    if (!hasDraftPermission) {
+      throw new ForbiddenError('You are not allowed to access draft content');
+    }
+
+    return next();
+  });
 
   // Define users-permissions origin configuration for sessionManager
   const upConfig = strapi.config.get('plugin::users-permissions');

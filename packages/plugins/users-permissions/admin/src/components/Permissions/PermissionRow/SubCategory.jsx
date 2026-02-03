@@ -76,6 +76,9 @@ const SubCategory = ({ subCategory }) => {
         <Grid.Root gap={2} style={{ flex: 1 }}>
           {subCategory.actions.map((action) => {
             const name = `${action.name}.enabled`;
+            const draftName = `${action.name}.allowDraft`;
+            const isEnabled = get(modifiedData, name, false);
+            const allowDraft = get(modifiedData, draftName, false);
 
             return (
               <Grid.Item
@@ -87,31 +90,51 @@ const SubCategory = ({ subCategory }) => {
                 alignItems="stretch"
               >
                 <CheckboxWrapper isActive={isActionSelected(action.name)} padding={2} hasRadius>
-                  <Checkbox
-                    checked={get(modifiedData, name, false)}
-                    name={name}
-                    onCheckedChange={(value) => onChange({ target: { name, value } })}
-                  >
-                    {action.label}
-                  </Checkbox>
-                  <button
-                    type="button"
-                    onClick={() => onSelectedAction(action.name)}
-                    style={{ display: 'inline-flex', alignItems: 'center' }}
-                  >
-                    <VisuallyHidden tag="span">
-                      {formatMessage(
-                        {
-                          id: 'app.utils.show-bound-route',
-                          defaultMessage: 'Show bound route for {route}',
-                        },
-                        {
-                          route: action.name,
-                        }
-                      )}
-                    </VisuallyHidden>
-                    <Cog id="cog" cursor="pointer" />
-                  </button>
+                  <Flex direction="column" alignItems="stretch" gap={1}>
+                    <Flex justifyContent="space-between" alignItems="center">
+                      <Checkbox
+                        checked={isEnabled}
+                        name={name}
+                        onCheckedChange={(value) => onChange({ target: { name, value } })}
+                      >
+                        {action.label}
+                      </Checkbox>
+                      <button
+                        type="button"
+                        onClick={() => onSelectedAction(action.name)}
+                        style={{ display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        <VisuallyHidden tag="span">
+                          {formatMessage(
+                            {
+                              id: 'app.utils.show-bound-route',
+                              defaultMessage: 'Show bound route for {route}',
+                            },
+                            {
+                              route: action.name,
+                            }
+                          )}
+                        </VisuallyHidden>
+                        <Cog id="cog" cursor="pointer" />
+                      </button>
+                    </Flex>
+                    {isEnabled && (
+                      <Box paddingLeft={6}>
+                        <Checkbox
+                          checked={allowDraft}
+                          name={draftName}
+                          onCheckedChange={(value) => onChange({ target: { name: draftName, value } })}
+                        >
+                          <Typography variant="pi" textColor="neutral600">
+                            {formatMessage({
+                              id: 'users-permissions.Plugin.permissions.allow-draft',
+                              defaultMessage: 'Allow draft',
+                            })}
+                          </Typography>
+                        </Checkbox>
+                      </Box>
+                    )}
+                  </Flex>
                 </CheckboxWrapper>
               </Grid.Item>
             );
