@@ -9,6 +9,7 @@
  */
 const crypto = require('crypto');
 const _ = require('lodash');
+const { ForbiddenError } = require('@strapi/utils').errors;
 const { getService } = require('../utils');
 const usersPermissionsActions = require('./users-permissions-actions');
 const {
@@ -176,7 +177,6 @@ module.exports = async ({ strapi }) => {
     );
 
     if (!hasDraftPermission) {
-      const { ForbiddenError } = require('@strapi/utils').errors;
       throw new ForbiddenError('You are not allowed to access draft content');
     }
 

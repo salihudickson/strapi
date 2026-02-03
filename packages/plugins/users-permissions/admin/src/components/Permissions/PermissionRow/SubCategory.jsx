@@ -124,7 +124,6 @@ const SubCategory = ({ subCategory }) => {
                           checked={allowDraft}
                           name={draftName}
                           onCheckedChange={(value) => onChange({ target: { name: draftName, value } })}
-                          disabled={!isEnabled}
                         >
                           <Typography variant="pi" textColor="neutral600">
                             {formatMessage({

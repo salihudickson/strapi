@@ -32,21 +32,13 @@ module.exports = ({ strapi }) => ({
    * @param {string} permission.action
    * @param {boolean} permission.allowDraft
    *
-   * @return {{ action: string, actionParameters?: object }}
+   * @return {{ action: string }}
    */
   toContentAPIPermission(permission) {
-    const { action, allowDraft } = permission;
+    const { action } = permission;
 
-    // If draft access is not allowed, add action parameters to restrict status
-    const result = { action };
-    
-    if (allowDraft === false) {
-      // Add action parameters to restrict to published content only
-      result.actionParameters = {
-        status: { $ne: 'draft' },
-      };
-    }
-
-    return result;
+    // Draft validation is handled by middleware in bootstrap
+    // This just returns the action for the ability engine
+    return { action };
   },
 });
