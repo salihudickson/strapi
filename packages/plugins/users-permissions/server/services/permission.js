@@ -30,12 +30,23 @@ module.exports = ({ strapi }) => ({
    *
    * @param {object} permission
    * @param {string} permission.action
+   * @param {boolean} permission.allowDraft
    *
-   * @return {{ action: string }}
+   * @return {{ action: string, actionParameters?: object }}
    */
   toContentAPIPermission(permission) {
-    const { action } = permission;
+    const { action, allowDraft } = permission;
 
-    return { action };
+    // If draft access is not allowed, add action parameters to restrict status
+    const result = { action };
+    
+    if (allowDraft === false) {
+      // Add action parameters to restrict to published content only
+      result.actionParameters = {
+        status: { $ne: 'draft' },
+      };
+    }
+
+    return result;
   },
 });

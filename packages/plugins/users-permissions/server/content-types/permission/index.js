@@ -30,5 +30,10 @@ module.exports = {
       inversedBy: 'permissions',
       configurable: false,
     },
+    allowDraft: {
+      type: 'boolean',
+      default: false,
+      configurable: false,
+    },
   },
 };
