@@ -14,7 +14,7 @@ module.exports = async (ctx, next) => {
 
   // Only check if status=draft is requested
   if (status !== 'draft') {
-    return await next();
+    return next();
   }
 
   // Get the auth info which includes user and permissions
@@ -31,7 +31,7 @@ module.exports = async (ctx, next) => {
   
   // If no scopes defined, continue (shouldn't happen with content-api routes)
   if (scopes.length === 0) {
-    return await next();
+    return next();
   }
 
   // Get user's role or check if public
@@ -56,5 +56,5 @@ module.exports = async (ctx, next) => {
     throw new ForbiddenError('You are not allowed to access draft content');
   }
 
-  await next();
+  return next();
 };

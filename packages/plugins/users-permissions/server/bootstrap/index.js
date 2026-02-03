@@ -129,7 +129,7 @@ module.exports = async ({ strapi }) => {
   strapi.server.use(async (ctx, next) => {
     // Only apply to content-api routes
     if (ctx.state.route?.info?.type !== 'content-api') {
-      return await next();
+      return next();
     }
 
     // Get the status query parameter
@@ -137,7 +137,7 @@ module.exports = async ({ strapi }) => {
 
     // Only check if status=draft is requested
     if (status !== 'draft') {
-      return await next();
+      return next();
     }
 
     // Get the auth info
@@ -145,7 +145,7 @@ module.exports = async ({ strapi }) => {
 
     // If no auth, let the normal authentication handle it
     if (!auth) {
-      return await next();
+      return next();
     }
 
     // Get the route configuration to determine which action is being accessed
@@ -154,7 +154,7 @@ module.exports = async ({ strapi }) => {
 
     // If no scopes defined, continue
     if (scopes.length === 0) {
-      return await next();
+      return next();
     }
 
     // Get user's role or check if public
@@ -180,7 +180,7 @@ module.exports = async ({ strapi }) => {
       throw new ForbiddenError('You are not allowed to access draft content');
     }
 
-    await next();
+    return next();
   });
 
   // Define users-permissions origin configuration for sessionManager
